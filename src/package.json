@@ -1,0 +1,8 @@
+{
+    "name": "Azure_Storage_POC",
+    "version": "0.0.1",
+    "dependencies": {
+        "azure-storage": "2.10.2",
+        "dotenv": "7.0.0"
+    }
+}
