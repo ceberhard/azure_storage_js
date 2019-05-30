@@ -1,40 +1,45 @@
-const azstore = require('azure-storage');
+var util = require('./storage-util');
+var express = require('express');
+var bodyparser = require('body-parser');
 
 require('dotenv').config();
 
-const bst = azstore.createBlobService(process.env.AZURE_STORAGE_ACCOUNT, process.env.AZURE_STORAGE_ACCESS_KEY);
-const CONTAINER = 'demo';
+var app = express();
+app.use(bodyparser.json());
 
-start();
+app.listen(3000, () => {
+    console.log('Server Running on Port 3000...');
+});
 
-async function start() {
-    await createContainer(CONTAINER);
-    console.log(`Created Container: "${CONTAINER}"`);
+// Endpoint for Saving Data to Azure Storage Container
+app.post("/api/azstore", async (req, res, next) => {
+    try {
+        var containername = req.body.container;
+        var name = req.body.name;
+        var text = req.body.text;
+        await util.write(containername, name, text);
+        var responsetext = `Wrote blob value: ${containername} : ${name} : ${text}`;
+        console.log(responsetext);
+        res.json({message: responsetext});
+    } catch(err) {
+        next(err);
+    }
+});
 
-    await write('chrisblob1', 'hello world!');
-    console.log('Write blob value');
-
-    // let value = 
-}
-
-async function createContainer(containername) {
-    return new Promise(r => {
-        bst.createContainerIfNotExists(containername, () => r());
-    })
-}
-
-async function write(name, text) {
-    return new Promise((resolve, reject) => {
-        bst.createBlockBlobFromText(CONTAINER, name, text, (err) => {
-            if (!err) resolve();
-            else reject();
-        })
-    })
-}
-
-async function read(name) {
-    return Promise(r => {
-        bst.getBlobToText(CONTAINER, name, (err, text) => r(err ? null : text));
-    })
-}
-
+// Endpoint for Reading Data from an Azure Storage Container
+app.get('/api/azstore/:container/:blobname', async (req, res, next) => {
+    try {
+        var containername = req.params.container;
+        var name = req.params.blobname;
+        var val = await util.read(containername, name);
+        var respobj = {
+            container: containername,
+            name: name,
+            text: val
+        }; 
+        console.log(respobj);
+        res.json(respobj);
+    } catch(err) {
+        next(err);
+    }
+});
